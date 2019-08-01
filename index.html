@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>BVG Transportation from HF Office</title>
+  <meta name="description"
+    content="Lists the departure times of different transportation options from around HF Berlin office.">
+  <meta name="author" content="Burak Karakan">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/skeleton.css">
+
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <style>
+    #main-title {
+      margin-bottom: 8px;
+    }
+
+    #last-updated {
+      color: #616161;
+    }
+
+    #trams-table-body tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      justify-content: space-between;
+    }
+
+    footer {
+      padding: 24px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="row">
+      <div class="column" style="margin-top: 5%">
+        <h4 id="main-title">BVG Departures - <code>Mollstr./Prenzlauer Allee</code></h4>
+        <h6 id="last-updated">Fetching data...</h6>
+        <div id="trams">
+          <table class="u-full-width">
+            <thead>
+              <tr>
+                <th>Line</th>
+                <th>Direction</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody id="trams-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      Data retrieved from BVG using <a href="https://github.com/derhuerst/bvg-rest">derhuerst/bvg-rest</a> project.
+    </div>
+  </footer>
+
+  <script>
+    const tramDepartureUrl = 'https://1.bvg.transport.rest/stations/900000110022/departures?duration=30';
+
+    (function () {
+      run();
+      setInterval(run, 30 * 1000);
+    })();
+
+    function run() {
+      fetch_retry(tramDepartureUrl, 3)
+        .then(response => {
+          response.json().then(data => {
+            buildTrams(data);
+          })
+        })
+    }
+
+    function fetch_retry(url, n) {
+      return fetch(url)
+        .then(response => {
+          if (response.status !== 200) {
+            throw new Error("not successful response");
+          }
+
+          return response;
+        })
+        .catch(function (error) {
+          if (n === 1) throw error;
+          return fetch_retry(url, n - 1);
+        });
+    }
+
+    function buildTrams(trams) {
+      if (trams.error) {
+        return;
+      }
+
+      const now = new Date();
+      const tableBody = document.getElementById("trams-table-body");
+      tableBody.innerHTML = "";
+
+      for (let tram of trams) {
+        const arrivalTime = new Date(tram.when);
+        if (arrivalTime < now) {
+          continue;
+        }
+
+        const line = makeElement('td', tram.line.name, 'name');
+        const direction = makeElement('td', tram.direction, 'direction');
+        const when = makeElement('td', timeUntil(arrivalTime), 'when');
+
+        const row = document.createElement('tr', 'line-row');
+        row.appendChild(line);
+        row.appendChild(direction);
+        row.appendChild(when);
+        tableBody.appendChild(row);
+      }
+
+      setLastUpdated();
+    }
+
+    function setLastUpdated() {
+      const span = document.getElementById('last-updated');
+      const now = new Date();
+      span.innerHTML = `Last updated: ${now.toLocaleString()}`;
+    }
+
+    function makeElement(type, data, className) {
+      const item = document.createElement(type);
+      item.textContent = data;
+      item.classList.add(className);
+      return item;
+    }
+
+    function timeUntil(timeStamp) {
+      return timeDistance(timeStamp, new Date());
+    }
+
+    function timeSince(timeStamp) {
+      return timeDistance(new Date(), timeStamp, new Date());
+    }
+
+    function timeDistance(t1, t2) {
+      const secondsPast = (t1.getTime() - t2.getTime()) / 1000;
+      if (secondsPast < 60) {
+        return parseInt(secondsPast) + 's';
+      }
+      if (secondsPast < 3600) {
+        return parseInt(secondsPast / 60) + 'm';
+      }
+      if (secondsPast <= 86400) {
+        return parseInt(secondsPast / 3600) + 'h';
+      }
+      if (secondsPast > 86400) {
+        day = timeStamp.getDate();
+        month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ", "");
+        year = timeStamp.getFullYear() == now.getFullYear() ? "" : " " + timeStamp.getFullYear();
+        return day + " " + month + year;
+      }
+    }
+  </script>
+</body>
+
+</html>
