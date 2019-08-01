@@ -14,18 +14,6 @@
 
   <link rel="icon" type="image/png" href="images/favicon.png">
   <style>
-    #main-title {
-      margin-bottom: 8px;
-    }
-
-    #last-updated {
-      color: #616161;
-    }
-
-    #trams-table-body tr:nth-child(odd) {
-      background-color: #f9f9f9;
-    }
-
     body {
       display: flex;
       flex-direction: column;
@@ -35,6 +23,57 @@
 
     footer {
       padding: 24px 0;
+    }
+
+    #main-title {
+      margin-bottom: 8px;
+    }
+
+    #last-updated {
+      color: #616161;
+    }
+
+    #trams {
+      overflow: scroll;
+    }
+
+    #trams-table-body tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+
+    .catchable {
+      text-align: center;
+    }
+
+    #trams-table-head>tr>th:first-child {
+      padding-left: 8px !important;
+    }
+
+    #trams-table-body>tr>td:first-child {
+      padding-left: 8px !important;
+    }
+
+    #trams-table-body>tr>td:last-child {
+      padding-right: 8px !important;
+    }
+
+    .circle {
+      width: 12px;
+      height: 12px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .danger {
+      background-color: #F56C6C;
+    }
+
+    .warning {
+      background-color: #E6A23C;
+    }
+
+    .success {
+      background-color: #67C23A;
     }
   </style>
 </head>
@@ -50,11 +89,12 @@
         <h6 id="last-updated">Fetching data...</h6>
         <div id="trams">
           <table class="u-full-width">
-            <thead>
+            <thead id="trams-table-head">
               <tr>
                 <th>Line</th>
                 <th>Direction</th>
                 <th>When</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="trams-table-body">
@@ -76,7 +116,7 @@
 
     (function () {
       run();
-      setInterval(run, 10 * 1000);
+      // setInterval(run, 10 * 1000);
     })();
 
     function run() {
@@ -122,10 +162,24 @@
         const direction = makeElement('td', tram.direction, 'direction');
         const when = makeElement('td', timeUntil(arrivalTime), 'when');
 
-        const row = document.createElement('tr', 'line-row');
+        let catchableStatus = 'success';
+        const diffInMinutes = timeDiffMinutes(arrivalTime, now);
+        if (diffInMinutes < 3) {
+          catchableStatus = 'danger';
+        } else if (diffInMinutes < 6) {
+          catchableStatus = 'warning';
+        }
+        const catchableCircle = makeElement('span', '', `circle`)
+        catchableCircle.classList.add(catchableStatus);
+        const catchable = makeElement('td', '', 'catchable');
+        catchable.appendChild(catchableCircle);
+
+        const row = document.createElement('tr');
+        row.classList.add('line-row');
         row.appendChild(line);
         row.appendChild(direction);
         row.appendChild(when);
+        row.appendChild(catchable);
         tableBody.appendChild(row);
       }
 
@@ -143,6 +197,11 @@
       item.textContent = data;
       item.classList.add(className);
       return item;
+    }
+
+    function timeDiffMinutes(dt2, dt1) {
+      var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+      return Math.abs(Math.round(diff / 60));
     }
 
     function timeUntil(timeStamp) {
