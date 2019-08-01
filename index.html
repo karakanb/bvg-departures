@@ -116,7 +116,7 @@
 
     (function () {
       run();
-      // setInterval(run, 10 * 1000);
+      setInterval(run, 10 * 1000);
     })();
 
     function run() {
@@ -148,6 +148,12 @@
         return;
       }
 
+      const catchableDefinitions = {
+        danger: 'It is not likely for you to be able to catch this train/bus.',
+        warning: 'You can catch this one if you leave immediately.',
+        success: 'You can catch this one easily, no worries.',
+      }
+
       const now = new Date();
       const tableBody = document.getElementById("trams-table-body");
       tableBody.innerHTML = "";
@@ -173,6 +179,7 @@
         catchableCircle.classList.add(catchableStatus);
         const catchable = makeElement('td', '', 'catchable');
         catchable.appendChild(catchableCircle);
+        catchable.setAttribute('title', catchableDefinitions[catchableStatus]);
 
         const row = document.createElement('tr');
         row.classList.add('line-row');
