@@ -31,6 +31,8 @@
 
     code {
       margin: 0;
+      white-space: inherit;
+      overflow-wrap: break-word;
     }
 
     .station-name {
@@ -56,10 +58,6 @@
     .tram-body:not(:last-child) {
       border-bottom: 4px solid #E1E1E1;
       margin-bottom: 2rem;
-    }
-
-    #main-title {
-      margin-bottom: 8px;
     }
 
     .table-wrapper {
@@ -111,7 +109,7 @@
   <div class="container">
     <div class="row">
       <div class="column" style="margin-top: 5%">
-        <h4 id="main-title">BVG Departures</h4>
+        <h1 id="main-title">BVG Departures</h1>
         <div id="trams"></div>
       </div>
     </div>
@@ -133,7 +131,7 @@
 
     (function () {
       const updateEverySeconds = 30;
-      const minutes = 5;
+      const minutes = 20;
       const stations = [
         {
           id: '900000110022',
@@ -209,7 +207,7 @@
 
         const station = makeElement('code', stationName);
         const row = makeElement('div', '', 'row');
-        const title = makeElement('h5', '', 'station-name');
+        const title = makeElement('h4', '', 'station-name');
         const lastUpdated = makeElement('span', 'Fetching data...', 'last-updated');
         title.appendChild(station);
         row.appendChild(title);
