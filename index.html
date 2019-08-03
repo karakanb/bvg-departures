@@ -3,9 +3,8 @@
 
 <head>
   <meta charset="utf-8">
-  <title>BVG Transportation from HF Berlin Office</title>
-  <meta name="description"
-    content="Lists the departure times of bus and tram lines next to the Hellofresh Berlin office.">
+  <title>BVG Departures</title>
+  <meta name="description" content="Lists the departure times of bus, tram and U-Bahn lines for BVG stations.">
   <meta name="author" content="Burak Karakan">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -21,8 +20,12 @@
       justify-content: space-between;
     }
 
+    .container {
+      padding-bottom: 24px;
+    }
+
     footer {
-      padding: 24px 0;
+      font-size: smaller;
     }
 
     table {
@@ -44,7 +47,8 @@
       margin-bottom: 4px;
     }
 
-    .last-updated {
+    .last-updated,
+    footer {
       color: #616161;
     }
 
@@ -122,13 +126,12 @@
         <div id="trams"></div>
       </div>
     </div>
+    <footer>
+      BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source project</a>, feel free to
+      create issues, report bugs and contribute.
+    </footer>
   </div>
 
-  <footer>
-    <div class="container">
-      Data retrieved from BVG using <a href="https://github.com/derhuerst/bvg-rest">derhuerst/bvg-rest</a> project.
-    </div>
-  </footer>
 
   <script>
     const apiBaseUrl = 'https://bvg-rest-api.karakanb.now.sh';
@@ -138,6 +141,7 @@
       success: 'You can catch this one easily, no worries.',
     };
 
+    // main execution starts here. this function builds the initial tables and sets intervals fur updates.
     (function () {
       const updateEverySeconds = 30;
       const minutes = 20;
@@ -156,7 +160,6 @@
         run(station.id, station.name, minutes);
         setInterval(() => run(station.id, station.name, minutes), updateEverySeconds * 1000);
       }
-
     })();
 
     // run creates and updates the departure information for a given station ID.
