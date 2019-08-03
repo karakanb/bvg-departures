@@ -29,19 +29,44 @@
       border-collapse: collapse;
     }
 
+    code {
+      margin: 0;
+    }
+
+    .station-name {
+      margin-bottom: 4px;
+    }
+
+    .last-updated {
+      color: #616161;
+    }
+
+    /* Larger than tablet */
+    @media (min-width: 750px) {
+      .station-name {
+        display: inline-block;
+      }
+
+      .last-updated {
+        margin-left: 8px;
+      }
+
+    }
+
+    .tram-body:not(:last-child) {
+      border-bottom: 4px solid #E1E1E1;
+      margin-bottom: 2rem;
+    }
+
     #main-title {
       margin-bottom: 8px;
     }
 
-    #last-updated {
-      color: #616161;
-    }
-
-    #trams {
+    .table-wrapper {
       overflow: scroll;
     }
 
-    #trams-table-body tr:nth-child(odd) {
+    .tram-table>tbody tr:nth-child(odd) {
       background-color: #f9f9f9;
     }
 
@@ -49,15 +74,15 @@
       text-align: center;
     }
 
-    #trams-table-head>tr>th:first-child {
+    .tram-body>table>thead>tr>th:first-child {
       padding-left: 8px !important;
     }
 
-    #trams-table-body>tr>td:first-child {
+    .tram-body>table>tbody>tr>td:first-child {
       padding-left: 8px !important;
     }
 
-    #trams-table-body>tr>td:last-child {
+    .tram-body>table>tbody>tr>td:last-child {
       padding-right: 8px !important;
     }
 
@@ -83,28 +108,11 @@
 </head>
 
 <body>
-
-  <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <div class="container">
     <div class="row">
       <div class="column" style="margin-top: 5%">
-        <h4 id="main-title">BVG Departures - <code>Mollstr./Prenzlauer Allee</code></h4>
-        <h6 id="last-updated">Fetching data...</h6>
-        <div id="trams">
-          <table class="u-full-width">
-            <thead id="trams-table-head">
-              <tr>
-                <th>Line</th>
-                <th>Direction</th>
-                <th>When</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="trams-table-body">
-            </tbody>
-          </table>
-        </div>
+        <h4 id="main-title">BVG Departures</h4>
+        <div id="trams"></div>
       </div>
     </div>
   </div>
@@ -116,24 +124,49 @@
   </footer>
 
   <script>
-    // const tramDepartureUrl = 'https://1.bvg.transport.rest/stations/900000110022/departures?duration=30';
-    const tramDepartureUrl = 'https://bvg-rest-api.karakanb.now.sh/stations/900000110022/departures?duration=30';
+    const apiBaseUrl = 'https://bvg-rest-api.karakanb.now.sh';
+    const catchableDefinitions = {
+      danger: 'It is not likely for you to be able to catch this train/bus.',
+      warning: 'You can catch this one if you leave immediately.',
+      success: 'You can catch this one easily, no worries.',
+    };
 
     (function () {
-      run();
-      // setInterval(run, 10 * 1000);
+      const updateEverySeconds = 30;
+      const minutes = 5;
+      const stations = [
+        {
+          id: '900000110022',
+          name: 'Mollstr./Prenzlauer Allee'
+        },
+        {
+          id: '900000100016',
+          name: 'U Rosa-Luxemburg-Platz'
+        },
+      ];
+
+      for (const station of stations) {
+        run(station.id, station.name, minutes);
+        setInterval(() => run(station.id, station.name, minutes), updateEverySeconds * 1000);
+      }
+
     })();
 
-    function run() {
-      fetch_retry(tramDepartureUrl, 3)
+    // run creates and updates the departure information for a given station ID.
+    function run(stationId, stationName, duration) {
+      const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
+      fetchRetry(tramDepartureUrl, 3)
         .then(response => {
           response.json().then(data => {
-            buildTrams(data);
+            const stationBody = getStationBody(stationId, stationName);
+            buildTrams(getTableOfStation(stationBody), data);
+            setLastUpdated(stationBody);
           })
         })
     }
 
-    function fetch_retry(url, n) {
+    // fetchRetry runs a fetch operation with a recursive retry call with given N times.
+    function fetchRetry(url, n) {
       return fetch(url)
         .then(response => {
           if (response.status !== 200) {
@@ -144,23 +177,60 @@
         })
         .catch(function (error) {
           if (n === 1) throw error;
-          return fetch_retry(url, n - 1);
+          return fetchRetry(url, n - 1);
         });
     }
 
-    function buildTrams(trams) {
+    // getTableOfStation finds or creates the table for the given station and returns its instance.
+    function getTableOfStation(wrapper) {
+      let table = wrapper.getElementsByTagName('table')[0];
+      if (!table) {
+        const tableWrapper = document.createElement('div');
+        tableWrapper.classList.add('table-wrapper');
+        tableWrapper.classList.add('row');
+        tableWrapper.classList.add('u-full-width');
+
+        table = makeTable('', ['Line', 'Direction', 'When', '']);
+        table.classList.add('u-full-width');
+        tableWrapper.appendChild(table)
+        wrapper.appendChild(tableWrapper);
+      }
+
+      return table;
+    }
+
+    function getStationBody(stationId, stationName) {
+      const id = `${stationId}-body`
+      let item = document.getElementById(id);
+      if (!item) {
+        item = document.createElement('div');
+        item.id = id;
+        item.classList.add('tram-body')
+
+        const station = makeElement('code', stationName);
+        const row = makeElement('div', '', 'row');
+        const title = makeElement('h5', '', 'station-name');
+        const lastUpdated = makeElement('span', 'Fetching data...', 'last-updated');
+        title.appendChild(station);
+        row.appendChild(title);
+        row.appendChild(lastUpdated);
+        item.appendChild(row);
+
+        trams = document.getElementById('trams');
+        trams.appendChild(item);
+      }
+
+      return item;
+    }
+
+    // buildTrams puts the given trams json into the given table.
+    function buildTrams(table, trams) {
       if (trams.error) {
         return;
       }
 
-      const catchableDefinitions = {
-        danger: 'It is not likely for you to be able to catch this train/bus.',
-        warning: 'You can catch this one if you leave immediately.',
-        success: 'You can catch this one easily, no worries.',
-      }
-
       const now = new Date();
-      const tableBody = document.getElementById("trams-table-body");
+      const tableBody = table.getElementsByTagName('tbody')[0];
       tableBody.innerHTML = "";
 
       for (let tram of trams) {
@@ -194,20 +264,42 @@
         row.appendChild(catchable);
         tableBody.appendChild(row);
       }
-
-      setLastUpdated();
     }
 
-    function setLastUpdated() {
-      const span = document.getElementById('last-updated');
+    function setLastUpdated(stationBody) {
+      const span = stationBody.getElementsByClassName('last-updated')[0];
       const now = new Date();
       span.innerHTML = `Last updated: ${now.toLocaleString()}`;
+    }
+
+    function makeTable(id, fields) {
+      const tr = document.createElement('tr');
+      for (const field of fields) {
+        const th = makeElement('th', field)
+        tr.appendChild(th);
+      }
+
+      const thead = document.createElement('thead');
+      thead.appendChild(tr);
+      const tbody = document.createElement('tbody');
+      const table = document.createElement('table');
+      table.appendChild(thead);
+      table.appendChild(tbody);
+
+      if (id) {
+        table.id = id;
+      }
+
+      return table
     }
 
     function makeElement(type, data, className) {
       const item = document.createElement(type);
       item.textContent = data;
-      item.classList.add(className);
+      if (className) {
+        item.classList.add(className);
+      }
+
       return item;
     }
 
