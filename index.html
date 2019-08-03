@@ -29,6 +29,11 @@
       border-collapse: collapse;
     }
 
+    td,
+    th {
+      padding: 12px 6px;
+    }
+
     code {
       margin: 0;
       white-space: inherit;
@@ -64,7 +69,7 @@
       overflow: scroll;
     }
 
-    .tram-table>tbody tr:nth-child(odd) {
+    .tram-body table>tbody tr:nth-child(odd) {
       background-color: #f9f9f9;
     }
 
@@ -72,16 +77,16 @@
       text-align: center;
     }
 
-    .tram-body>table>thead>tr>th:first-child {
-      padding-left: 8px !important;
+    .tram-body table>thead>tr>th:first-child {
+      padding-left: 4px !important;
     }
 
-    .tram-body>table>tbody>tr>td:first-child {
-      padding-left: 8px !important;
+    .tram-body table>tbody>tr>td:first-child {
+      padding-left: 4px !important;
     }
 
-    .tram-body>table>tbody>tr>td:last-child {
-      padding-right: 8px !important;
+    .tram-body table>tbody>tr>td:last-child {
+      padding-right: 4px !important;
     }
 
     .circle {
@@ -101,6 +106,10 @@
 
     .success {
       background-color: #67C23A;
+    }
+
+    .align-right {
+      text-align: right;
     }
   </style>
 </head>
@@ -138,8 +147,8 @@
           name: 'Mollstr./Prenzlauer Allee'
         },
         {
-          id: '900000100016',
-          name: 'U Rosa-Luxemburg-Platz'
+          id: '900000110005',
+          name: 'U Senefelderplatz'
         },
       ];
 
@@ -153,6 +162,10 @@
     // run creates and updates the departure information for a given station ID.
     function run(stationId, stationName, duration) {
       const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
+
+      // Builds the tables before the actual request.
+      getTableOfStation(getStationBody(stationId, stationName));
+
       fetchRetry(tramDepartureUrl, 3)
         .then(response => {
           response.json().then(data => {
@@ -188,7 +201,7 @@
         tableWrapper.classList.add('row');
         tableWrapper.classList.add('u-full-width');
 
-        table = makeTable('', ['Line', 'Direction', 'When', '']);
+        table = makeTable('', ['Line', 'Direction', 'When', ''], { 'When': ['align-right'] });
         table.classList.add('u-full-width');
         tableWrapper.appendChild(table)
         wrapper.appendChild(tableWrapper);
@@ -240,6 +253,7 @@
         const line = makeElement('td', tram.line.name, 'name');
         const direction = makeElement('td', tram.direction, 'direction');
         const when = makeElement('td', timeUntil(arrivalTime), 'when');
+        when.classList.add('align-right');
 
         let catchableStatus = 'success';
         const diffInMinutes = timeDiffMinutes(arrivalTime, now);
@@ -270,10 +284,15 @@
       span.innerHTML = `Last updated: ${now.toLocaleString()}`;
     }
 
-    function makeTable(id, fields) {
+    function makeTable(id, fields, classes) {
       const tr = document.createElement('tr');
       for (const field of fields) {
         const th = makeElement('th', field)
+        if (classes[field]) {
+          for (const c of classes[field]) {
+            th.classList.add(c);
+          }
+        }
         tr.appendChild(th);
       }
 
@@ -316,8 +335,8 @@
 
     function timeDistance(t1, t2) {
       const secondsPast = (t1.getTime() - t2.getTime()) / 1000;
-      if (secondsPast < 60) {
-        return parseInt(secondsPast) + 's';
+      if (secondsPast <= 60) {
+        return '< 1m';
       }
       if (secondsPast < 3600) {
         return parseInt(secondsPast / 60) + 'm';
