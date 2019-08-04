@@ -86,7 +86,8 @@
       padding-left: 8px !important;
     }
 
-    .tram-body table>thead>tr>th:last-child, .tram-body table>tbody>tr>td:last-child {
+    .tram-body table>thead>tr>th:last-child,
+    .tram-body table>tbody>tr>td:last-child {
       padding-right: 8px !important;
     }
 
@@ -120,17 +121,54 @@
     <div class="row">
       <div class="column" style="margin-top: 5%">
         <h1 id="main-title">BVG Departures</h1>
-        <div id="trams"></div>
+        <div id="trams">
+          <div id="app">
+            <div v-if="!this.stationsEmpty" id="trams">
+              <div v-for="station in stations" class="tram-body">
+                <div class="row">
+                  <h4 class="station-name">
+                    <code>{{station.name}}</code>
+                  </h4>
+                  <span class="last-updated">
+                    {{ lastUpdated[station.id] ? `Last updated: ${lastUpdated[station.id].toLocaleString()}` : "Fetching data..."}}
+                  </span>
+                </div>
+                <div class="table-wrapper row u-full-width">
+                  <table class="u-full-width">
+                    <thead>
+                      <tr>
+                        <th>Line</th>
+                        <th>Direction</th>
+                        <th class="align-right">When</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="departure in departures[station.id]" class="line-row">
+                        <td class="name">{{departure.line.name}}</td>
+                        <td class="direction">{{departure.direction}}</td>
+                        <td class="when align-right" :class="getCatchableStatus(departure.when)">
+                          {{ timeUntil( new Date(departure.when))}}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              LINES EMPTY
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <footer>
       BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source project</a>,
-      feel free to
-      create issues, report bugs and contribute.
+      feel free to create issues, report bugs and contribute.
     </footer>
   </div>
 
-
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
   <script>
     const apiBaseUrl = 'https://bvg-rest-api.now.sh';
     const catchableDefinitions = {
@@ -138,217 +176,114 @@
       warning: 'You can catch this one if you leave immediately.',
       success: 'You can catch this one easily, no worries.',
     };
-
-    // main execution starts here. this function builds the initial tables and sets intervals fur updates.
-    (function () {
-      const updateEverySeconds = 30;
-      const minutes = 20;
-      const stations = [
-        {
-          id: '900000110022',
-          name: 'Mollstr./Prenzlauer Allee'
-        },
-        {
-          id: '900000110005',
-          name: 'U Senefelderplatz'
-        },
-      ];
-
-      for (const station of stations) {
-        run(station.id, station.name, minutes);
-        setInterval(() => run(station.id, station.name, minutes), updateEverySeconds * 1000);
-      }
-    })();
-
-    // run creates and updates the departure information for a given station ID.
-    function run(stationId, stationName, duration) {
-      const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
-
-      // Builds the tables before the actual request.
-      getTableOfStation(getStationBody(stationId, stationName));
-
-      fetchRetry(tramDepartureUrl, 3)
-        .then(response => {
-          response.json().then(data => {
-            const stationBody = getStationBody(stationId, stationName);
-            buildTrams(getTableOfStation(stationBody), data);
-            setLastUpdated(stationBody);
-          })
-        })
-    }
-
-    // fetchRetry runs a fetch operation with a recursive retry call with given N times.
-    function fetchRetry(url, n) {
-      return fetch(url)
-        .then(response => {
-          if (response.status !== 200) {
-            throw new Error("not successful response");
-          }
-
-          return response;
-        })
-        .catch(function (error) {
-          if (n === 1) throw error;
-          return fetchRetry(url, n - 1);
-        });
-    }
-
-    // getTableOfStation finds or creates the table for the given station and returns its instance.
-    function getTableOfStation(wrapper) {
-      let table = wrapper.getElementsByTagName('table')[0];
-      if (!table) {
-        const tableWrapper = document.createElement('div');
-        tableWrapper.classList.add('table-wrapper');
-        tableWrapper.classList.add('row');
-        tableWrapper.classList.add('u-full-width');
-
-        table = makeTable('', ['Line', 'Direction', 'When'], { 'When': ['align-right'] });
-        table.classList.add('u-full-width');
-        tableWrapper.appendChild(table)
-        wrapper.appendChild(tableWrapper);
-      }
-
-      return table;
-    }
-
-    function getStationBody(stationId, stationName) {
-      const id = `${stationId}-body`
-      let item = document.getElementById(id);
-      if (!item) {
-        item = document.createElement('div');
-        item.id = id;
-        item.classList.add('tram-body')
-
-        const station = makeElement('code', stationName);
-        const row = makeElement('div', '', 'row');
-        const title = makeElement('h4', '', 'station-name');
-        const lastUpdated = makeElement('span', 'Fetching data...', 'last-updated');
-        title.appendChild(station);
-        row.appendChild(title);
-        row.appendChild(lastUpdated);
-        item.appendChild(row);
-
-        trams = document.getElementById('trams');
-        trams.appendChild(item);
-      }
-
-      return item;
-    }
-
-    // buildTrams puts the given trams json into the given table.
-    function buildTrams(table, trams) {
-      if (trams.error) {
-        return;
-      }
-
-      const now = new Date();
-      const tableBody = table.getElementsByTagName('tbody')[0];
-      tableBody.innerHTML = "";
-
-      for (let tram of trams) {
-        const arrivalTime = new Date(tram.when);
-        if (arrivalTime < now) {
-          continue;
-        }
-
-        const line = makeElement('td', tram.line.name, 'name');
-        const direction = makeElement('td', tram.direction, 'direction');
-        const when = makeElement('td', timeUntil(arrivalTime), 'when');
-        when.classList.add('align-right');
-
-        let catchableStatus = 'success';
-        const diffInMinutes = timeDiffMinutes(arrivalTime, now);
-        if (diffInMinutes < 3) {
-          catchableStatus = 'danger';
-        } else if (diffInMinutes < 6) {
-          catchableStatus = 'warning';
-        }
-        when.classList.add(catchableStatus);
-        when.setAttribute('title', catchableDefinitions[catchableStatus]);
-
-        const row = document.createElement('tr');
-        row.classList.add('line-row');
-        row.appendChild(line);
-        row.appendChild(direction);
-        row.appendChild(when);
-        tableBody.appendChild(row);
-      }
-    }
-
-    function setLastUpdated(stationBody) {
-      const span = stationBody.getElementsByClassName('last-updated')[0];
-      const now = new Date();
-      span.innerHTML = `Last updated: ${now.toLocaleString()}`;
-    }
-
-    function makeTable(id, fields, classes) {
-      const tr = document.createElement('tr');
-      for (const field of fields) {
-        const th = makeElement('th', field)
-        if (classes[field]) {
-          for (const c of classes[field]) {
-            th.classList.add(c);
-          }
-        }
-        tr.appendChild(th);
-      }
-
-      const thead = document.createElement('thead');
-      thead.appendChild(tr);
-      const tbody = document.createElement('tbody');
-      const table = document.createElement('table');
-      table.appendChild(thead);
-      table.appendChild(tbody);
-
-      if (id) {
-        table.id = id;
-      }
-
-      return table
-    }
-
-    function makeElement(type, data, className) {
-      const item = document.createElement(type);
-      item.textContent = data;
-      if (className) {
-        item.classList.add(className);
-      }
-
-      return item;
-    }
-
-    function timeDiffMinutes(dt2, dt1) {
-      var diff = (dt2.getTime() - dt1.getTime()) / 1000;
-      return Math.abs(Math.round(diff / 60));
-    }
-
-    function timeUntil(timeStamp) {
-      return timeDistance(timeStamp, new Date());
-    }
-
-    function timeSince(timeStamp) {
-      return timeDistance(new Date(), timeStamp, new Date());
-    }
-
-    function timeDistance(t1, t2) {
-      const secondsPast = (t1.getTime() - t2.getTime()) / 1000;
-      if (secondsPast <= 60) {
-        return '< 1m';
-      }
-      if (secondsPast < 3600) {
-        return parseInt(secondsPast / 60) + 'm';
-      }
-      if (secondsPast <= 86400) {
-        return parseInt(secondsPast / 3600) + 'h';
-      }
-      if (secondsPast > 86400) {
-        day = timeStamp.getDate();
-        month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ", "");
-        year = timeStamp.getFullYear() == now.getFullYear() ? "" : " " + timeStamp.getFullYear();
-        return day + " " + month + year;
-      }
-    }
   </script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        stations: localStorage.getItem('stations') || [],
+        lastUpdated: {},
+        departures: {},
+        duration: 5,
+      },
+      created() {
+        console.log("created")
+        this.stations = [
+          {
+            id: '900000110022',
+            name: 'Mollstr./Prenzlauer Allee',
+          },
+          {
+            id: '900000110005',
+            name: 'U Senefelderplatz',
+          }
+        ];
+
+        for (const station of this.stations) {
+          this.fetchDepartures(station.id, station.name, this.duration);
+          setInterval(() => this.fetchDepartures(station.id, station.name, this.duration), 5 * 1000);
+        }
+        console.log("initiated fetch")
+      },
+      methods: {
+        // fetchRetry runs a fetch operation with a recursive retry call with given N times.
+        fetchRetry(url, n) {
+          return fetch(url)
+            .then(response => {
+              if (response.status !== 200) {
+                throw new Error("not successful response");
+              }
+
+              return response;
+            })
+            .catch(error => {
+              if (n === 1) throw error;
+              return this.fetchRetry(url, n - 1);
+            });
+        },
+
+        fetchDepartures(stationId, stationName, duration) {
+          const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
+          this.fetchRetry(tramDepartureUrl, 3)
+            .then(response => {
+              response.json().then(data => {
+                Vue.set(this.departures, stationId, data);
+                Vue.set(this.lastUpdated, stationId, new Date());
+              })
+            });
+        },
+
+        getCatchableStatus(when) {
+          const diffInMinutes = this.timeDiffMinutes(new Date(when), new Date());
+          if (diffInMinutes < 3) {
+            return 'danger';
+          } else if (diffInMinutes < 6) {
+            return 'warning';
+          }
+
+          return 'success';
+        },
+
+        timeDiffMinutes(dt2, dt1) {
+          var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+          return Math.abs(Math.round(diff / 60));
+        },
+
+        timeUntil(timeStamp) {
+          return this.timeDistance(timeStamp, new Date());
+        },
+
+        timeSince(timeStamp) {
+          return this.timeDistance(new Date(), timeStamp, new Date());
+        },
+
+        timeDistance(t1, t2) {
+          const secondsPast = (t1.getTime() - t2.getTime()) / 1000;
+          if (secondsPast <= 60) {
+            return '< 1m';
+          }
+          if (secondsPast < 3600) {
+            return parseInt(secondsPast / 60) + 'm';
+          }
+          if (secondsPast <= 86400) {
+            return parseInt(secondsPast / 3600) + 'h';
+          }
+          if (secondsPast > 86400) {
+            day = timeStamp.getDate();
+            month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ", "");
+            year = timeStamp.getFullYear() == now.getFullYear() ? "" : " " + timeStamp.getFullYear();
+            return day + " " + month + year;
+          }
+        },
+      },
+      computed: {
+        stationsEmpty() {
+          return this.stations === undefined || this.stations.length === 0;
+        }
+      },
+    });
+  </script>
+
 </body>
 
 </html>
