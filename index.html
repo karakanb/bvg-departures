@@ -81,16 +81,13 @@
       text-align: center;
     }
 
-    .tram-body table>thead>tr>th:first-child {
-      padding-left: 4px !important;
-    }
-
+    .tram-body table>thead>tr>th:first-child,
     .tram-body table>tbody>tr>td:first-child {
-      padding-left: 4px !important;
+      padding-left: 8px !important;
     }
 
-    .tram-body table>tbody>tr>td:last-child {
-      padding-right: 4px !important;
+    .tram-body table>thead>tr>th:last-child, .tram-body table>tbody>tr>td:last-child {
+      padding-right: 8px !important;
     }
 
     .circle {
@@ -101,15 +98,15 @@
     }
 
     .danger {
-      background-color: #F56C6C;
+      color: #ce0909;
     }
 
     .warning {
-      background-color: #E6A23C;
+      color: #E6A23C;
     }
 
     .success {
-      background-color: #67C23A;
+      color: #2c8401;
     }
 
     .align-right {
@@ -127,16 +124,17 @@
       </div>
     </div>
     <footer>
-      BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source project</a>, feel free to
+      BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source project</a>,
+      feel free to
       create issues, report bugs and contribute.
     </footer>
   </div>
 
 
   <script>
-    const apiBaseUrl = 'https://bvg-rest-api.karakanb.now.sh';
+    const apiBaseUrl = 'https://bvg-rest-api.now.sh';
     const catchableDefinitions = {
-      danger: 'It is not likely for you to be able to catch this train/bus.',
+      danger: 'It is not likely for you to be able to catch this.',
       warning: 'You can catch this one if you leave immediately.',
       success: 'You can catch this one easily, no worries.',
     };
@@ -204,7 +202,7 @@
         tableWrapper.classList.add('row');
         tableWrapper.classList.add('u-full-width');
 
-        table = makeTable('', ['Line', 'Direction', 'When', ''], { 'When': ['align-right'] });
+        table = makeTable('', ['Line', 'Direction', 'When'], { 'When': ['align-right'] });
         table.classList.add('u-full-width');
         tableWrapper.appendChild(table)
         wrapper.appendChild(tableWrapper);
@@ -265,18 +263,14 @@
         } else if (diffInMinutes < 6) {
           catchableStatus = 'warning';
         }
-        const catchableCircle = makeElement('span', '', `circle`)
-        catchableCircle.classList.add(catchableStatus);
-        const catchable = makeElement('td', '', 'catchable');
-        catchable.appendChild(catchableCircle);
-        catchable.setAttribute('title', catchableDefinitions[catchableStatus]);
+        when.classList.add(catchableStatus);
+        when.setAttribute('title', catchableDefinitions[catchableStatus]);
 
         const row = document.createElement('tr');
         row.classList.add('line-row');
         row.appendChild(line);
         row.appendChild(direction);
         row.appendChild(when);
-        row.appendChild(catchable);
         tableBody.appendChild(row);
       }
     }
