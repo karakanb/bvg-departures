@@ -21,7 +21,7 @@
     }
 
     .container {
-      padding-bottom: 24px;
+      padding: 24px;
     }
 
     footer {
@@ -77,10 +77,6 @@
       background-color: #f9f9f9;
     }
 
-    .catchable {
-      text-align: center;
-    }
-
     .tram-body table>thead>tr>th:first-child,
     .tram-body table>tbody>tr>td:first-child {
       padding-left: 8px !important;
@@ -89,13 +85,6 @@
     .tram-body table>thead>tr>th:last-child,
     .tram-body table>tbody>tr>td:last-child {
       padding-right: 8px !important;
-    }
-
-    .circle {
-      width: 12px;
-      height: 12px;
-      border-radius: 12px;
-      display: inline-block;
     }
 
     .danger {
@@ -113,71 +102,89 @@
     .align-right {
       text-align: right;
     }
+
+    .no-departures-description {
+      padding-top: 2rem;
+    }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="row">
-      <div class="column" style="margin-top: 5%">
-        <h1 id="main-title">BVG Departures</h1>
-        <div id="trams">
-          <div id="app">
-            <div v-if="!this.stationsEmpty" id="trams">
-              <div v-for="station in stations" class="tram-body">
-                <div class="row">
-                  <h4 class="station-name">
-                    <code>{{station.name}}</code>
-                  </h4>
-                  <span class="last-updated">
-                    {{ lastUpdated[station.id] ? `Last updated: ${lastUpdated[station.id].toLocaleString()}` : "Fetching data..."}}
-                  </span>
-                </div>
-                <div class="table-wrapper row u-full-width">
-                  <table class="u-full-width">
-                    <thead>
-                      <tr>
-                        <th>Line</th>
-                        <th>Direction</th>
-                        <th class="align-right">When</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="departure in departures[station.id]" class="line-row">
-                        <td class="name">{{departure.line.name}}</td>
-                        <td class="direction">{{departure.direction}}</td>
-                        <td class="when align-right" :class="getCatchableStatus(departure.when)">
-                          {{ timeUntil( new Date(departure.when))}}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+  <div id="app">
+    <div class="container">
+      <h1 id="main-title">BVG Departures</h1>
+      <div id="trams">
+        <div v-if="!this.stationsEmpty" id="trams">
+          <div v-for="station in stations" class="tram-body">
+            <div class="row">
+              <h4 class="station-name">
+                <code>{{station.name}}</code>
+              </h4>
+              <span class="last-updated">
+                {{ lastUpdated[station.id] ? `Last updated: ${lastUpdated[station.id].toLocaleString()}` : "Fetching data..."}}
+              </span>
             </div>
-            <div v-else>
-              LINES EMPTY
+            <div class="table-wrapper row u-full-width">
+              <table v-if="!lastUpdated[station.id] || (departures[station.id] && departures[station.id].length > 0)" class="u-full-width">
+                <thead>
+                  <tr>
+                    <th>Line</th>
+                    <th>Direction</th>
+                    <th class="align-right">When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="departure in departures[station.id]" class="line-row">
+                    <td class="name">{{departure.line.name}}</td>
+                    <td class="direction">{{departure.direction}}</td>
+                    <td class="when align-right" :class="getCatchableStatus(departure.when)">
+                      {{ timeUntil( new Date(departure.when))}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-else class="no-departures-description">It seems like there are no departures from this station for now. 😔</p>
             </div>
           </div>
         </div>
+        <div v-else>
+          <p>
+            It seems like you didn't select a station yet, feel free to select a station below and see how cool this
+            thing is.
+          </p>
+        </div>
+        <hr>
+        <div style="margin-bottom: 50vh;">
+          <h5>Add a new station</h5>
+          <v-select label="name" :value="selectedStation" @input="stationSelected" :options="stationList"
+            :show-labels="false" :hideSelected="true" :resetAfter="true">
+          </v-select>
+        </div>
       </div>
+      <hr>
+      <footer>
+        BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source
+          project</a>,
+        feel free to create issues, report bugs and contribute.
+      </footer>
     </div>
-    <footer>
-      BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source project</a>,
-      feel free to create issues, report bugs and contribute.
-    </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-  <script>
+  <script src="https://unpkg.com/vue-multiselect@2.1.0"></script>
+  <link rel="stylesheet" href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css">
+
+  <script type="module">
+    import stations from './stations.js';
+
     const apiBaseUrl = 'https://bvg-rest-api.now.sh';
     const catchableDefinitions = {
       danger: 'It is not likely for you to be able to catch this.',
       warning: 'You can catch this one if you leave immediately.',
       success: 'You can catch this one easily, no worries.',
     };
-  </script>
-  <script>
+
+    Vue.component('v-select', window.VueMultiselect.default)
     var app = new Vue({
       el: '#app',
       data: {
@@ -185,27 +192,62 @@
         lastUpdated: {},
         departures: {},
         duration: 5,
+        stationList: stations,
+        selectedStation: '',
+        intervals: [],
       },
       created() {
         console.log("created")
-        this.stations = [
-          {
-            id: '900000110022',
-            name: 'Mollstr./Prenzlauer Allee',
-          },
-          {
-            id: '900000110005',
-            name: 'U Senefelderplatz',
-          }
-        ];
+        // this.stations = [
+        //   {
+        //     id: '900000110022',
+        //     name: 'Mollstr./Prenzlauer Allee',
+        //   },
+        //   {
+        //     id: '900000110005',
+        //     name: 'U Senefelderplatz',
+        //   }
+        // ];
 
-        for (const station of this.stations) {
-          this.fetchDepartures(station.id, station.name, this.duration);
-          setInterval(() => this.fetchDepartures(station.id, station.name, this.duration), 5 * 1000);
-        }
+        this.updateAllStations();
         console.log("initiated fetch")
       },
       methods: {
+        stationSelected(station) {
+          this.stations.push(station);
+          console.log("added station");
+
+          for (const interval of this.intervals) {
+            clearInterval(interval);
+          }
+
+          console.log("cleared intervals");
+          this.updateAllStations();
+        },
+
+        updateAllStations() {
+          for (const station of this.stations) {
+            this.fetchDepartures(station.id, station.name, this.duration);
+            const interval = setInterval(() => this.fetchDepartures(station.id, station.name, this.duration), 5 * 1000);
+            this.intervals.push(interval);
+          }
+        },
+
+        fetchDepartures(stationId, stationName, duration) {
+          const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
+          this.fetchRetry(tramDepartureUrl, 3)
+            .then(response => {
+              response.json().then(data => {
+                if(!data) {
+                  data = [];
+                }
+
+                Vue.set(this.departures, stationId, data);
+                Vue.set(this.lastUpdated, stationId, new Date());
+              })
+            });
+        },
+
         // fetchRetry runs a fetch operation with a recursive retry call with given N times.
         fetchRetry(url, n) {
           return fetch(url)
@@ -219,17 +261,6 @@
             .catch(error => {
               if (n === 1) throw error;
               return this.fetchRetry(url, n - 1);
-            });
-        },
-
-        fetchDepartures(stationId, stationName, duration) {
-          const tramDepartureUrl = `${apiBaseUrl}/stations/${stationId}/departures?duration=${duration}`;
-          this.fetchRetry(tramDepartureUrl, 3)
-            .then(response => {
-              response.json().then(data => {
-                Vue.set(this.departures, stationId, data);
-                Vue.set(this.lastUpdated, stationId, new Date());
-              })
             });
         },
 
