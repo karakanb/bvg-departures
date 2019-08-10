@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>BVG Departures</title>
+  <meta name="description" content="Lists the departure times of bus, tram and U-Bahn lines for BVG stations.">
+  <meta name="author" content="Burak Karakan">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <style>
+    .container {
+      padding: 24px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    footer {
+      font-size: smaller;
+      color: #616161;
+    }
+
+    .container:after,
+    .row:after,
+    .u-cf {
+      content: "";
+      display: none;
+      clear: both;
+    }
+
+    .offline-message {
+      padding-top: 20vh;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <div style="padding-top: 20vh; color: #636366">
+      <h2 class="row">
+        Oh shit, no internet!
+      </h2>
+      <div class="row">
+        It seems like you don't have internet connection. Unfortunately, I cannot show the departures without internet
+        connection.
+      </div>
+      <div class="row" style="text-align: center; margin-top: 48px; font-size: 100px;">😔</div>
+    </div>
+    <footer>
+      BVG Departures is an <a href="https://github.com/karakanb/bvg-departures" target="_blank">open-source
+        project</a>,
+      feel free to create issues, report bugs and contribute.
+    </footer>
+  </div>
+
+</body>
+
+</html>
