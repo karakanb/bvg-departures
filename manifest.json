@@ -2,14 +2,15 @@
   "name": "BVG Departures",
   "short_name": "BVG Departures",
   "description": "List departure times of various tram, bus and U-Bahn from selected stations.",
+  "background_color": "white",
   "display": "standalone",
   "orientation": "any",
   "lang": "English",
-  "start_url": "/",
+  "start_url": "https://burakkarakan.com/bvg-departures/",
   "icons": [
     {
-      "src": "bvg-departures.png",
-      "sizes": "500x500"
+      "src": "images/bvg-departures.png",
+      "sizes": "1000x1000"
     }
   ]
 }
