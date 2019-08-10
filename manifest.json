@@ -3,6 +3,7 @@
   "short_name": "BVG Departures",
   "description": "List departure times of various tram, bus and U-Bahn from selected stations.",
   "background_color": "white",
+  "theme_color": "white",
   "display": "standalone",
   "orientation": "any",
   "lang": "English",
