@@ -7,7 +7,8 @@
   "display": "standalone",
   "orientation": "any",
   "lang": "English",
-  "start_url": "https://burakkarakan.com/bvg-departures/",
+  "start_url": "/",
+  "scope": ".",
   "icons": [
     {
       "src": "images/bvg-departures.png",

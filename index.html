@@ -7,7 +7,7 @@
   <meta name="description" content="Lists the departure times of bus, tram and U-Bahn lines for BVG stations.">
   <meta name="author" content="Burak Karakan">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ffffff"/>
+  <meta name="theme-color" content="#ffffff" />
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
@@ -374,18 +374,16 @@
   </script>
 
   <script>
-
-    if (!(window.matchMedia('(display-mode: standalone)').matches)) {
-      document.getElementById("install-button").style.display = 'block';
-    }
-
     let deferredPrompt = null;
 
     window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('preventEd event');
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
       // Stash the event so it can be triggered later.
       deferredPrompt = e;
+
+      document.getElementById("install-button").style.display = 'block';
     });
 
     async function install() {
